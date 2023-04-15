@@ -1,5 +1,18 @@
 import streamlit as st
 import pandas as pd
+from google.oauth2 import service_account
+from gsheetsdb import connect
+
+# Create a connection object.
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
+    scopes=[
+        "https://www.googleapis.com/auth/spreadsheets",
+    ],
+)
+conn = connect(credentials=credentials)
+
+SPREADSHEET_ID = "1LgjHf-yoF2t_e-4jZ-bKO4eHpgJBvdXBBPe7UCir1KA"
 
 st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 
@@ -8,15 +21,21 @@ st.title("ToDo List Rat :clipboard:")
 
 
 
-def load_data():
-    try:
-        data = pd.read_csv("tasks.csv")
-    except FileNotFoundError:
-        data = pd.DataFrame(columns=["Task", "Status"])
+# Helper function to read data from Google Sheets
+def load_data_from_sheets():
+    result = sheets_api.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range="Sheet1!A1:B").execute()
+    data = pd.DataFrame(result["values"][1:], columns=result["values"][0])
     return data
 
-def save_data(data):
-    data.to_csv("tasks.csv", index=False)
+# Helper function to write data to Google Sheets
+def write_data_to_sheets(data):
+    data_to_write = [data.columns.tolist()] + data.values.tolist()
+    body = {"values": data_to_write}
+    sheets_api.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range="Sheet1!A1", valueInputOption="RAW", body=body).execute()
+
+# Replace 'load_data' and 'save_data' functions with the new helper functions
+load_data = load_data_from_sheets
+save_data = write_data_to_sheets
 
 def add_task(task):
     data = load_data()
