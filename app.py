@@ -6,19 +6,17 @@ st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 
 st.title("ToDo List Rat :clipboard:")
 
-# Rest of your app code
-# ...
-url = "https://raw.githubusercontent.com/hmeidas/todorat/main/tasks.csv?raw=true"
+
 
 def load_data():
     try:
-        data = pd.read_csv(url)
+        data = pd.read_csv("tasks.csv")
     except FileNotFoundError:
         data = pd.DataFrame(columns=["Task", "Status"])
     return data
 
 def save_data(data):
-    data.to_csv(url, index=False)
+    data.to_csv("tasks.csv", index=False)
 
 def add_task(task):
     data = load_data()
