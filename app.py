@@ -35,7 +35,7 @@ def update_task_status(sheet_url, task, status):
 # Streamlit app
 st.title("To-Do List")
 
-sheet_url = st.text_input("Google Sheets URL")
+sheet_url =  st.secrets["private_gsheets_url"]
 
 if sheet_url:
     data = load_data(sheet_url)
