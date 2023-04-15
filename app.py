@@ -9,6 +9,8 @@ background_image_css = """
 body {
 background-image: url("https://www.radiofrance.fr/s3/cruiser-production/2021/04/527d6b25-172b-4ea6-99f0-1ed26250fdd2/560x315_dents.jpg");
 background-size: cover;
+background-repeat: no-repeat;
+background-attachment: fixed;
 }
 </style>
 """
