@@ -3,16 +3,6 @@ import pandas as pd
 
 st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 
-background_gradient_css = """
-<style>
-body {
-background: linear-gradient(135deg, #ABDCFF, #0396FF);
-}
-</style>
-"""
-
-st.markdown(background_gradient_css, unsafe_allow_html=True)
-
 st.title("ToDo List Rat :clipboard:")
 
 @st.cache(ttl=600)
