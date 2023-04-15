@@ -12,8 +12,7 @@ credentials = service_account.Credentials.from_service_account_info(
 )
 conn = connect(credentials=credentials)
 
-# Perform SQL query on the Google Sheet.
-@st.cache_data(ttl=600, allow_output_mutation=True)
+@st.cache(ttl=600, allow_output_mutation=True)
 def run_query(query):
     rows = conn.execute(query, headers=1)
     rows = rows.fetchall()
