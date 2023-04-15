@@ -12,27 +12,21 @@ credentials = service_account.Credentials.from_service_account_info(
 )
 conn = connect(credentials=credentials)
 
-st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
-st.title("ToDo List Rat :clipboard:")
-
-sheet_url = st.secrets["private_gsheets_url"]
-
 # Perform SQL query on the Google Sheet.
 @st.cache_data(ttl=600)
 def run_query(query):
     rows = conn.execute(query, headers=1)
     rows = rows.fetchall()
-    return pd.DataFrame(rows)
+    return rows
 
-# Replace 'load_data' and 'save_data' functions with the new helper functions
-def load_data():
-    sheet_url = st.secrets["private_gsheets_url"]
-    data = run_query(f'SELECT * FROM "{sheet_url}"')
-    data.columns = ["Task", "Status"]
+sheet_url = st.secrets["private_gsheets_url"]
+
+def load_data(sheet_url):
+    rows = run_query(f'SELECT * FROM "{sheet_url}"')
+    data = pd.DataFrame(rows, columns=["Task", "Status"])
     return data
 
-def save_data(data):
-    sheet_url = st.secrets["private_gsheets_url"]
+def save_data(sheet_url, data):
     data_as_dict = data.to_dict(orient='records')
     query = f'INSERT INTO "{sheet_url}" (Task, Status) VALUES '
     query += ', '.join([f'("{row["Task"]}", "{row["Status"]}")' for row in data_as_dict])
@@ -40,66 +34,36 @@ def save_data(data):
     conn.execute(f'DELETE FROM "{sheet_url}" WHERE "Task" IS NOT NULL')
     conn.execute(query)
 
-def delete_completed_tasks():
-    sheet_url = st.secrets["private_gsheets_url"]
-    data = load_data()
+def update_task_status(sheet_url, task, new_status):
+    data = load_data(sheet_url)
+    data.loc[data['Task'] == task, 'Status'] = new_status
+    save_data(sheet_url, data)
+
+def delete_completed_tasks(sheet_url):
+    data = load_data(sheet_url)
     data = data[data['Status'] != 'Completed']
-    save_data(data)
+    save_data(sheet_url, data)
 
+st.title("To-Do List")
+st.write("Add, update, and delete tasks in your to-do list.")
 
-
-def update_task_status(task, status):
-    sheet_url = st.secrets["private_gsheets_url"]
-    data = load_data()
-    data.loc[data['Task'] == task, 'Status'] = status
-    save_data(data)
-    
-def add_task(task):
-    sheet_url = st.secrets["private_gsheets_url"]
-    data = load_data()
-    data = data.append({"Task": task, "Status": "Pending"}, ignore_index=True)
-    save_data(data)
-
-
-task = st.text_input("Enter a task")
+task_input = st.text_input("New Task:")
 
 if st.button("Add Task"):
-    if task:
-        add_task(task)
-        st.success(f"Added task: {task}")
+    if task_input.strip() == "":
+        st.warning("Please enter a non-empty task.")
     else:
-        st.warning("Please enter a task.")
+        update_task_status(sheet_url, task_input, "Pending")
 
-if not st.session_state.get('tasks_updated'):
-    st.session_state.tasks_updated = False
-
-data = load_data()
-
-if not data.empty:
-    pending_tasks = data[data['Status'] == 'Pending']
-    completed_tasks = data[data['Status'] == 'Completed']
-
-    col1, col2 = st.columns(2)
+for _, row in load_data(sheet_url).iterrows():
+    col1, col2, _ = st.beta_columns([5, 1, 1])
 
     with col1:
-        st.subheader("Pending Tasks")
-        for index, row in pending_tasks.iterrows():
-            task_key = f"pending-{row['Task']}"
-            task_status = st.checkbox(f"{row['Task']}", value=False, key=task_key)
-            if task_status:
-                update_task_status(row['Task'], "Completed")
-                st.experimental_rerun()
+        st.write(f"**{row['Task']}**")
 
     with col2:
-        st.subheader("Completed Tasks")
-        for index, row in completed_tasks.iterrows():
-            task_key = f"completed-{row['Task']}"
-            task_status = st.checkbox(f"{row['Task']}", value=True, key=task_key)
-            if not task_status:
-                update_task_status(row['Task'], "Pending")
-                st.experimental_rerun()
+        if st.button("Mark as Completed", key=row['Task']):
+            update_task_status(sheet_url, row['Task'], "Completed")
 
-    if st.button("Delete Completed Tasks"):
-        delete_completed_tasks()
-        st.session_state.tasks_updated = not st.session_state.tasks_updated
-        st.experimental_rerun()
+if st.button("Delete Completed Tasks"):
+    delete_completed_tasks(sheet_url)
