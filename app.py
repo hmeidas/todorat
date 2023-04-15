@@ -21,7 +21,8 @@ def load_data(sheets_url):
     return pd.read_csv(csv_url)
 
 public_gsheets_url = "https://docs.google.com/spreadsheets/d/1LgjHf-yoF2t_e-4jZ-bKO4eHpgJBvdXBBPe7UCir1KA/edit?usp=share_link"
-data = load_data(public_gsheets_url)
+data = load_data("https://docs.google.com/spreadsheets/d/1LgjHf-yoF2t_e-4jZ-bKO4eHpgJBvdXBBPe7UCir1KA/edit?usp=share_link")
+
 
 def save_data(data):
     data.to_csv("tasks.csv", index=False)
