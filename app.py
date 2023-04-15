@@ -1,60 +1,77 @@
 import streamlit as st
-from google.oauth2 import service_account
-from gsheetsdb import connect
 import pandas as pd
 
-credentials = service_account.Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=[
-        "https://www.googleapis.com/auth/spreadsheets",
-    ],
-)
-conn = connect(credentials=credentials)
+st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 
-@st.cache(ttl=600, allow_output_mutation=True)
-def run_query(query):
-    rows = conn.execute(query, headers=1)
-    rows = rows.fetchall()
-    data = [row._asdict() for row in rows]
+
+st.title("ToDo List Rat :clipboard:")
+
+
+
+def load_data():
+    try:
+        data = pd.read_csv("tasks.csv")
+    except FileNotFoundError:
+        data = pd.DataFrame(columns=["Task", "Status"])
     return data
 
-def load_data(sheet_url):
-    query = f'SELECT * FROM "{sheet_url}"'
-    rows = run_query(query)
-    data = pd.DataFrame(rows, columns=["Task", "Status"])
-    return data
+def save_data(data):
+    data.to_csv("tasks.csv", index=False)
 
-def save_data(sheet_url, data):
-    conn.execute(f'DELETE FROM "{sheet_url}" WHERE "Task" IS NOT NULL')
-    for _, row in data.iterrows():
-        conn.execute(f'INSERT INTO "{sheet_url}" ("Task", "Status") VALUES (%s, %s)', row)
+def add_task(task):
+    data = load_data()
+    data = data.append({"Task": task, "Status": "Pending"}, ignore_index=True)
+    save_data(data)
 
-def update_task_status(sheet_url, task, status):
-    data = load_data(sheet_url)
-    data.loc[data["Task"] == task, "Status"] = status
-    save_data(sheet_url, data)
+def update_task_status(task, status):
+    data = load_data()
+    data.loc[data['Task'] == task, 'Status'] = status
+    save_data(data)
 
-st.title("To-Do List")
+def delete_completed_tasks():
+    data = load_data()
+    data = data[data['Status'] != 'Completed']
+    save_data(data)
 
-sheet_url = st.secrets["private_gsheets_url"]
+task = st.text_input("Enter a task")
 
-if sheet_url:
-    data = load_data(sheet_url)
+if st.button("Add Task"):
+    if task:
+        add_task(task)
+        st.success(f"Added task: {task}")
+    else:
+        st.warning("Please enter a task.")
 
-    for _, row in data.iterrows():
-        col1, col2 = st.columns(2)
-        if row["Status"] == "Pending":
-            with col1:
-                check = st.checkbox("Mark as Completed", key=row["Task"])
-                if check:
-                    update_task_status(sheet_url, row["Task"], "Completed")
-            with col2:
-                st.text(row["Task"])
-        else:
-            with col1:
-                st.text("Completed")
-            with col2:
-                st.text(row["Task"])
+if not st.session_state.get('tasks_updated'):
+    st.session_state.tasks_updated = False
 
-    if st.button("Refresh"):
-        data = load_data(sheet_url)
+data = load_data()
+
+if not data.empty:
+    pending_tasks = data[data['Status'] == 'Pending']
+    completed_tasks = data[data['Status'] == 'Completed']
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Pending Tasks")
+        for index, row in pending_tasks.iterrows():
+            task_key = f"pending-{row['Task']}"
+            task_status = st.checkbox(f"{row['Task']}", value=False, key=task_key)
+            if task_status:
+                update_task_status(row['Task'], "Completed")
+                st.experimental_rerun()
+
+    with col2:
+        st.subheader("Completed Tasks")
+        for index, row in completed_tasks.iterrows():
+            task_key = f"completed-{row['Task']}"
+            task_status = st.checkbox(f"{row['Task']}", value=True, key=task_key)
+            if not task_status:
+                update_task_status(row['Task'], "Pending")
+                st.experimental_rerun()
+
+    if st.button("Delete Completed Tasks"):
+        delete_completed_tasks()
+        st.session_state.tasks_updated = not st.session_state.tasks_updated
+        st.experimental_rerun()
