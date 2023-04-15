@@ -1,60 +1,46 @@
 import streamlit as st
-from google.oauth2 import service_account
-from gsheetsdb import connect
 import pandas as pd
+from gsheetsdb import connect
+from datetime import datetime
 
-credentials = service_account.Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=[
-        "https://www.googleapis.com/auth/spreadsheets",
-    ],
-)
-conn = connect(credentials=credentials)
+# Connect to the database
+conn = connect()
 
-@st.cache(ttl=600, allow_output_mutation=True)
-def run_query(query):
-    rows = conn.execute(query, headers=1)
-    rows = rows.fetchall()
-    data = [row._asdict() for row in rows]
-    return data
+# Authenticate with Google Sheets
+st.set_credentials("path/to/credentials.json")
 
+@st.cache_data
 def load_data(sheet_url):
-    query = f'SELECT * FROM "{sheet_url}"'
-    rows = run_query(query)
-    data = pd.DataFrame(rows, columns=["Task", "Status"])
-    return data
+    query = f'SELECT * FROM "{sheet_url}" WHERE "Task" IS NOT NULL'
+    return pd.read_sql(query, conn)
 
+@st.cache_data
 def save_data(sheet_url, data):
     conn.execute(f'DELETE FROM "{sheet_url}" WHERE "Task" IS NOT NULL')
-    for _, row in data.iterrows():
-        conn.execute(f'INSERT INTO "{sheet_url}" ("Task", "Status") VALUES (%s, %s)', row)
+    conn.insert_rows(sheet_url, data.values.tolist())
 
 def update_task_status(sheet_url, task, status):
     data = load_data(sheet_url)
     data.loc[data["Task"] == task, "Status"] = status
     save_data(sheet_url, data)
 
+sheet_url = "https://docs.google.com/spreadsheets/d/1SAMPLE-SHEET-ID/edit"
+data = load_data(sheet_url)
+
 st.title("To-Do List")
 
-sheet_url = st.secrets["private_gsheets_url"]
+st.subheader("Current tasks:")
+todolist = data[["Task", "Status"]]
+st.write(todolist)
 
-if sheet_url:
-    data = load_data(sheet_url)
+# Switch columns
+st.subheader("Switched columns:")
+st.write(todolist[["Status", "Task"]])
 
-    for _, row in data.iterrows():
-        col1, col2 = st.columns(2)
-        if row["Status"] == "Pending":
-            with col1:
-                check = st.checkbox("Mark as Completed", key=row["Task"])
-                if check:
-                    update_task_status(sheet_url, row["Task"], "Completed")
-            with col2:
-                st.text(row["Task"])
-        else:
-            with col1:
-                st.text("Completed")
-            with col2:
-                st.text(row["Task"])
-
-    if st.button("Refresh"):
-        data = load_data(sheet_url)
+# Remove "Mark as completed" text
+st.subheader("Without 'Mark as completed' text:")
+tasks = data[data["Status"] != "Completed"]["Task"]
+for task in tasks:
+    if st.button(f"Complete: {task}"):
+        update_task_status(sheet_url, task, "Completed")
+        st.success(f"Task '{task}' marked as completed.")
