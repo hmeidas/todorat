@@ -15,6 +15,8 @@ conn = connect(credentials=credentials)
 st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 st.title("ToDo List Rat :clipboard:")
 
+sheet_url = st.secrets["private_gsheets_url"]
+
 # Perform SQL query on the Google Sheet.
 @st.cache_data(ttl=600)
 def run_query(query):
@@ -30,6 +32,7 @@ def load_data():
     return data
 
 def save_data(data):
+    sheet_url = st.secrets["private_gsheets_url"]
     data_as_dict = data.to_dict(orient='records')
     query = f'INSERT INTO "{sheet_url}" (Task, Status) VALUES '
     query += ', '.join([f'("{row["Task"]}", "{row["Status"]}")' for row in data_as_dict])
@@ -38,20 +41,23 @@ def save_data(data):
     conn.execute(query)
 
 def delete_completed_tasks():
+    sheet_url = st.secrets["private_gsheets_url"]
     data = load_data()
     data = data[data['Status'] != 'Completed']
     save_data(data)
 
-# The rest of your code remains the same
 
-def add_task(task):
-    data = load_data()
-    data = data.append({"Task": task, "Status": "Pending"}, ignore_index=True)
-    save_data(data)
 
 def update_task_status(task, status):
+    sheet_url = st.secrets["private_gsheets_url"]
     data = load_data()
     data.loc[data['Task'] == task, 'Status'] = status
+    save_data(data)
+    
+def add_task(task):
+    sheet_url = st.secrets["private_gsheets_url"]
+    data = load_data()
+    data = data.append({"Task": task, "Status": "Pending"}, ignore_index=True)
     save_data(data)
 
 
