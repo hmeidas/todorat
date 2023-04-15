@@ -16,7 +16,7 @@ conn = connect(credentials=credentials)
 def run_query(query):
     rows = conn.execute(query, headers=1)
     rows = rows.fetchall()
-    data = [dict(row) for row in rows]
+    data = [row._asdict() for row in rows]
     return data
 
 sheet_url = st.secrets["private_gsheets_url"]
