@@ -7,7 +7,7 @@ st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 background_image_css = """
 <style>
 body {
-background-image: url("https://example.com/your-image-url.jpg");
+background-image: url("https://www.radiofrance.fr/s3/cruiser-production/2021/04/527d6b25-172b-4ea6-99f0-1ed26250fdd2/560x315_dents.jpg");
 background-size: cover;
 }
 </style>
