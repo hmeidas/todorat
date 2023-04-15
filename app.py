@@ -8,7 +8,7 @@ st.title("ToDo List Rat :clipboard:")
 
 # Rest of your app code
 # ...
-url = "https://github.com/hmeidas/todorat/blob/main/tasks.csv?raw=true"
+url = "https://raw.githubusercontent.com/hmeidas/todorat/main/tasks.csv?raw=true"
 
 def load_data():
     try:
