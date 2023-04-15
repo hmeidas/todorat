@@ -10,6 +10,9 @@ credentials = service_account.Credentials.from_service_account_info(
         "https://www.googleapis.com/auth/spreadsheets",
     ],
 )
+
+sheets_api = build("sheets", "v4", credentials=creds)
+
 conn = connect(credentials=credentials)
 
 SPREADSHEET_ID = "1LgjHf-yoF2t_e-4jZ-bKO4eHpgJBvdXBBPe7UCir1KA"
