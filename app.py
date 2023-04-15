@@ -19,6 +19,12 @@ def run_query(query):
     data = [row._asdict() for row in rows]
     return data
 
+def load_data(sheet_url):
+    query = f'SELECT * FROM "{sheet_url}"'
+    rows = conn.execute(query)
+    data = pd.DataFrame(rows, columns=["Task", "Status", "Due Date"])
+    return data
+
 
 # Save data
 def save_data(sheet_url, data):
