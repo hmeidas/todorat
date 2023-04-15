@@ -5,7 +5,7 @@ st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 
 st.title("ToDo List Rat :clipboard:")
 
-@st.cache(ttl=600)
+@st.cache_data(ttl=600)
 def load_data(sheets_url):
     csv_url = sheets_url.replace("/edit#gid=", "/export?format=csv&gid=")
     return pd.read_csv(csv_url)
