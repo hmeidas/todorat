@@ -3,33 +3,22 @@ import pandas as pd
 
 st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 
-# Define the background gradient CSS
-background_gradient_css = """
-<style>
-body {
-background: linear-gradient(135deg, #ABDCFF, #0396FF);
-}
-</style>
-"""
-
-# Add the background gradient CSS to the app
-st.markdown(background_gradient_css, unsafe_allow_html=True)
 
 st.title("ToDo List Rat :clipboard:")
 
 # Rest of your app code
 # ...
-
+url = "https://github.com/hmeidas/todorat/blob/main/tasks.csv?raw=true"
 
 def load_data():
     try:
-        data = pd.read_csv("tasks.csv")
+        data = pd.read_csv(url)
     except FileNotFoundError:
         data = pd.DataFrame(columns=["Task", "Status"])
     return data
 
 def save_data(data):
-    data.to_csv("tasks.csv", index=False)
+    data.to_csv(url, index=False)
 
 def add_task(task):
     data = load_data()
