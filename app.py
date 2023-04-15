@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 from google.oauth2 import service_account
 from gsheetsdb import connect
 
@@ -10,35 +9,32 @@ credentials = service_account.Credentials.from_service_account_info(
         "https://www.googleapis.com/auth/spreadsheets",
     ],
 )
-
-sheets_api = build("sheets", "v4", credentials=creds)
-
 conn = connect(credentials=credentials)
 
-SPREADSHEET_ID = "1LgjHf-yoF2t_e-4jZ-bKO4eHpgJBvdXBBPe7UCir1KA"
-
 st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
-
-
 st.title("ToDo List Rat :clipboard:")
 
-
-
-# Helper function to read data from Google Sheets
-def load_data_from_sheets():
-    result = sheets_api.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range="Sheet1!A1:B").execute()
-    data = pd.DataFrame(result["values"][1:], columns=result["values"][0])
-    return data
-
-# Helper function to write data to Google Sheets
-def write_data_to_sheets(data):
-    data_to_write = [data.columns.tolist()] + data.values.tolist()
-    body = {"values": data_to_write}
-    sheets_api.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range="Sheet1!A1", valueInputOption="RAW", body=body).execute()
+# Perform SQL query on the Google Sheet.
+@st.cache(ttl=600)
+def run_query(query):
+    rows = conn.execute(query, headers=1)
+    rows = rows.fetchall()
+    return pd.DataFrame(rows)
 
 # Replace 'load_data' and 'save_data' functions with the new helper functions
-load_data = load_data_from_sheets
-save_data = write_data_to_sheets
+def load_data():
+    sheet_url = st.secrets["private_gsheets_url"]
+    data = run_query(f'SELECT * FROM "{sheet_url}"')
+    data.columns = ["Task", "Status"]
+    return data
+
+def save_data(data):
+    sheet_url = st.secrets["private_gsheets_url"]
+    data_to_write = [data.columns.tolist()] + data.values.tolist()
+    conn.execute(f'DELETE FROM "{sheet_url}" WHERE "Task" IS NOT NULL')
+    conn.insert(sheet_url, data_to_write)
+
+# The rest of your code remains the same
 
 def add_task(task):
     data = load_data()
