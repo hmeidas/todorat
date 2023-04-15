@@ -19,51 +19,45 @@ def run_query(query):
     data = [row._asdict() for row in rows]
     return data
 
-sheet_url = st.secrets["private_gsheets_url"]
 
-def load_data(sheet_url):
-    rows = run_query(f'SELECT * FROM "{sheet_url}"')
-    data = pd.DataFrame(rows)
-    return data
-
+# Save data
 def save_data(sheet_url, data):
-    data_as_dict = data.to_dict(orient='records')
-    query = f'INSERT INTO "{sheet_url}" (Task, Status) VALUES '
-    query += ', '.join([f'("{row["Task"]}", "{row["Status"]}")' for row in data_as_dict])
-
     conn.execute(f'DELETE FROM "{sheet_url}" WHERE "Task" IS NOT NULL')
-    conn.execute(query)
+    for _, row in data.iterrows():
+        conn.execute(f'INSERT INTO "{sheet_url}" ("Task", "Status", "Due Date") VALUES (%s, %s, %s)', row)
 
-def update_task_status(sheet_url, task, new_status):
+# Update task status
+def update_task_status(sheet_url, task, status):
     data = load_data(sheet_url)
-    data.loc[data['Task'] == task, 'Status'] = new_status
+    data.loc[data["Task"] == task, "Status"] = status
     save_data(sheet_url, data)
 
-def delete_completed_tasks(sheet_url):
-    data = load_data(sheet_url)
-    data = data[data['Status'] != 'Completed']
-    save_data(sheet_url, data)
-
+# Streamlit app
 st.title("To-Do List")
-st.write("Add, update, and delete tasks in your to-do list.")
 
-task_input = st.text_input("New Task:")
+sheet_url = st.text_input("Google Sheets URL")
 
-if st.button("Add Task"):
-    if task_input.strip() == "":
-        st.warning("Please enter a non-empty task.")
-    else:
-        update_task_status(sheet_url, task_input, "Pending")
+if sheet_url:
+    data = load_data(sheet_url)
 
-for _, row in load_data(sheet_url).iterrows():
-    col1, col2, _ = st.beta_columns([5, 1, 1])
-
-    with col1:
-        st.write(f"**{row['Task']}**")
-
-    with col2:
-        if st.button("Mark as Completed", key=row['Task']):
-            update_task_status(sheet_url, row['Task'], "Completed")
-
-if st.button("Delete Completed Tasks"):
-    delete_completed_tasks(sheet_url)
+    for _, row in data.iterrows():
+        col1, col2, col3 = st.columns(3)
+        if row["Status"] == "Pending":
+            with col1:
+                check = st.checkbox("Mark as Completed", key=row["Task"])
+                if check:
+                    update_task_status(sheet_url, row["Task"], "Completed")
+            with col2:
+                st.text(row["Task"])
+            with col3:
+                st.text(row["Due Date"])
+        else:
+            with col1:
+                st.text("Completed")
+            with col2:
+                st.text(row["Task"])
+            with col3:
+                st.text(row["Due Date"])
+                
+    if st.button("Refresh"):
+        data = load_data(sheet_url)
