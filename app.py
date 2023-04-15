@@ -3,7 +3,6 @@ import pandas as pd
 
 st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 
-# Define the background gradient CSS
 background_gradient_css = """
 <style>
 body {
@@ -12,37 +11,33 @@ background: linear-gradient(135deg, #ABDCFF, #0396FF);
 </style>
 """
 
-# Add the background gradient CSS to the app
 st.markdown(background_gradient_css, unsafe_allow_html=True)
 
 st.title("ToDo List Rat :clipboard:")
 
-# Rest of your app code
-# ...
+@st.cache(ttl=600)
+def load_data(sheets_url):
+    csv_url = sheets_url.replace("/edit#gid=", "/export?format=csv&gid=")
+    return pd.read_csv(csv_url)
 
-
-def load_data():
-    try:
-        data = pd.read_csv("tasks.csv")
-    except FileNotFoundError:
-        data = pd.DataFrame(columns=["Task", "Status"])
-    return data
+public_gsheets_url = "https://docs.google.com/spreadsheets/d/1LgjHf-yoF2t_e-4jZ-bKO4eHpgJBvdXBBPe7UCir1KA/edit?usp=share_link"
+data = load_data(public_gsheets_url)
 
 def save_data(data):
     data.to_csv("tasks.csv", index=False)
 
 def add_task(task):
-    data = load_data()
+    data = load_data(public_gsheets_url)
     data = data.append({"Task": task, "Status": "Pending"}, ignore_index=True)
     save_data(data)
 
 def update_task_status(task, status):
-    data = load_data()
+    data = load_data(public_gsheets_url)
     data.loc[data['Task'] == task, 'Status'] = status
     save_data(data)
 
 def delete_completed_tasks():
-    data = load_data()
+    data = load_data(public_gsheets_url)
     data = data[data['Status'] != 'Completed']
     save_data(data)
 
@@ -55,10 +50,7 @@ if st.button("Add Task"):
     else:
         st.warning("Please enter a task.")
 
-if not st.session_state.get('tasks_updated'):
-    st.session_state.tasks_updated = False
-
-data = load_data()
+data = load_data(public_gsheets_url)
 
 if not data.empty:
     pending_tasks = data[data['Status'] == 'Pending']
@@ -86,5 +78,4 @@ if not data.empty:
 
     if st.button("Delete Completed Tasks"):
         delete_completed_tasks()
-        st.session_state.tasks_updated = not st.session_state.tasks_updated
         st.experimental_rerun()
