@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 
+st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
+
 # Define the background image CSS
 background_image_css = """
 <style>
@@ -14,7 +16,7 @@ background-size: cover;
 # Add the background image CSS to the app
 st.markdown(background_image_css, unsafe_allow_html=True)
 
-st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
+
 
 st.title("ToDo List Rat :clipboard:")
 
