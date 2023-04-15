@@ -19,7 +19,7 @@ st.title("ToDo List Rat :clipboard:")
 def load_data(sheets_url):
     csv_url = sheets_url.replace("/edit#gid=", "/export?format=csv&gid=")
     print("CSV URL:", csv_url)
-    return pd.read_csv(csv_url)
+    #return pd.read_csv(csv_url)
 
 public_gsheets_url = "https://docs.google.com/spreadsheets/d/1LgjHf-yoF2t_e-4jZ-bKO4eHpgJBvdXBBPe7UCir1KA/edit?usp=share_link"
 data = load_data(public_gsheets_url)
