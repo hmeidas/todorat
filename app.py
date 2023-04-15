@@ -16,7 +16,7 @@ st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 st.title("ToDo List Rat :clipboard:")
 
 # Perform SQL query on the Google Sheet.
-@st.cache(ttl=600)
+@st.cache_data(ttl=600)
 def run_query(query):
     rows = conn.execute(query, headers=1)
     rows = rows.fetchall()
@@ -30,10 +30,17 @@ def load_data():
     return data
 
 def save_data(data):
-    sheet_url = st.secrets["private_gsheets_url"]
-    data_to_write = [data.columns.tolist()] + data.values.tolist()
+    data_as_dict = data.to_dict(orient='records')
+    query = f'INSERT INTO "{sheet_url}" (Task, Status) VALUES '
+    query += ', '.join([f'("{row["Task"]}", "{row["Status"]}")' for row in data_as_dict])
+
     conn.execute(f'DELETE FROM "{sheet_url}" WHERE "Task" IS NOT NULL')
-    conn.insert(sheet_url, data_to_write)
+    conn.execute(query)
+
+def delete_completed_tasks():
+    data = load_data()
+    data = data[data['Status'] != 'Completed']
+    save_data(data)
 
 # The rest of your code remains the same
 
@@ -47,10 +54,6 @@ def update_task_status(task, status):
     data.loc[data['Task'] == task, 'Status'] = status
     save_data(data)
 
-def delete_completed_tasks():
-    data = load_data()
-    data = data[data['Status'] != 'Completed']
-    save_data(data)
 
 task = st.text_input("Enter a task")
 
