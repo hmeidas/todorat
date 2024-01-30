@@ -3,42 +3,52 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
 
-st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
+
+st.set_page_config(page_title="ToDo", page_icon=":clipboard:")
 
 
-st.title("ToDo List Rat :clipboard:")
+st.title("ToDo Rat :clipboard:")
 
 # Create a connection object.
 conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet="Tasks")
 
-
-
+# Load data from Google Sheets.
 def load_data():
-    try:
-        data =  conn.read()
-    except FileNotFoundError:
-        data = pd.DataFrame(columns=["Task", "Status"])
+    data = conn.read(worksheet="Sheet",
+                     usecols=[0, 1]).dropna(how='all')
+
     return data
 
-def save_data(data):
-    conn.write(data)
-
+# Add a new task.
 def add_task(task):
-    data = load_data()
-    data = data.append({"Task": task, "Status": "Pending"}, ignore_index=True)
-    save_data(data)
+    try:
+        new_data = pd.DataFrame({"Task": [task], "Status": ["Pending"]})
+        st.session_state.data = st.session_state.data.append(new_data, ignore_index=True)
+        save_data()
+    except Exception as e:
+        st.write(f"Exception when adding task: {e}")  # Debugging line
 
+# Save data to Google Sheets.
+def save_data():
+    try:
+        st.session_state.data = conn.update(data = st.session_state.data, worksheet="Sheet")
+        st.cache_data.clear()
+        st.rerun()
+    except Exception as e:
+        st.write(f"Exception when saving data: {e}")  # Debugging line
+
+# Update the status of a task.
 def update_task_status(task, status):
-    data = load_data()
-    data.loc[data['Task'] == task, 'Status'] = status
-    save_data(data)
+    st.session_state.data.loc[st.session_state.data['Task'] == task, 'Status'] = status
+    save_data()
 
 def delete_completed_tasks():
-    data = load_data()
-    data = data[data['Status'] != 'Completed']
-    save_data(data)
+    st.session_state.data = st.session_state.data[st.session_state.data['Status'] != 'Completed']
+    save_data()
 
 task = st.text_input("Enter a task")
+
+st.session_state.data = load_data()
 
 if st.button("Add Task"):
     if task:
@@ -47,14 +57,11 @@ if st.button("Add Task"):
     else:
         st.warning("Please enter a task.")
 
-if not st.session_state.get('tasks_updated'):
-    st.session_state.tasks_updated = False
 
-data = load_data()
 
-if not data.empty:
-    pending_tasks = data[data['Status'] == 'Pending']
-    completed_tasks = data[data['Status'] == 'Completed']
+if not st.session_state.data.empty:
+    pending_tasks = st.session_state.data[st.session_state.data['Status'] == 'Pending']
+    completed_tasks = st.session_state.data[st.session_state.data['Status'] == 'Completed']
 
     col1, col2 = st.columns(2)
 
@@ -65,7 +72,6 @@ if not data.empty:
             task_status = st.checkbox(f"{row['Task']}", value=False, key=task_key)
             if task_status:
                 update_task_status(row['Task'], "Completed")
-                st.experimental_rerun()
 
     with col2:
         st.subheader("Completed Tasks")
@@ -73,10 +79,9 @@ if not data.empty:
             task_key = f"completed-{row['Task']}"
             task_status = st.checkbox(f"{row['Task']}", value=True, key=task_key)
             if not task_status:
-                update_task_status(row['Task'], "Pending")
-                st.experimental_rerun()
+                update_task_status(row['Task'], "Pending",st.session_state.data)
+                st.rerun()
 
     if st.button("Delete Completed Tasks"):
         delete_completed_tasks()
-        st.session_state.tasks_updated = not st.session_state.tasks_updated
-        st.experimental_rerun()
+        st.rerun()
