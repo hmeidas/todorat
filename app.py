@@ -1,22 +1,27 @@
 import streamlit as st
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
+
 
 st.set_page_config(page_title="ToDo List App", page_icon=":clipboard:")
 
 
 st.title("ToDo List Rat :clipboard:")
 
+# Create a connection object.
+conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet="Tasks")
+
 
 
 def load_data():
     try:
-        data = pd.read_csv("tasks.csv")
+        data =  conn.read()
     except FileNotFoundError:
         data = pd.DataFrame(columns=["Task", "Status"])
     return data
 
 def save_data(data):
-    data.to_csv("tasks.csv", index=False)
+    conn.write(data)
 
 def add_task(task):
     data = load_data()
