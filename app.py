@@ -48,8 +48,9 @@ if "data" not in st.session_state:
     # Create a connection object.
     st.session_state.conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet="Tasks")
     st.session_state.data = load_data()
+    conn = st.session_state.conn
 
-conn = st.session_state.conn
+
 if st.button("Add Task"):
     if task:
         add_task(task)
