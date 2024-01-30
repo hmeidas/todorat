@@ -80,7 +80,7 @@ if not st.session_state.data.empty:
             task_key = f"completed-{row['Task']}"
             task_status = st.checkbox(f"{row['Task']}", value=True, key=task_key)
             if not task_status:
-                update_task_status(row['Task'], "Pending",st.session_state.data)
+                update_task_status(row['Task'], "Pending")
 
     if st.button("Delete Completed Tasks"):
         delete_completed_tasks()
