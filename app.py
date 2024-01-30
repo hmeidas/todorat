@@ -2,21 +2,17 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-
-
 st.set_page_config(page_title="ToDo", page_icon=":clipboard:")
 
 
 st.title("ToDo Rat :clipboard:")
 
-# Create a connection object.
-conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet="Tasks")
+
 
 # Load data from Google Sheets.
 def load_data():
     data = conn.read(worksheet="Sheet",
                      usecols=[0, 1]).dropna(how='all')
-
     return data
 
 # Add a new task.
@@ -48,7 +44,10 @@ def delete_completed_tasks():
 
 task = st.text_input("Enter a task")
 
-st.session_state.data = load_data()
+if "data" not in st.session_state:
+    # Create a connection object.
+    conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet="Tasks")
+    st.session_state.data = load_data()
 
 if st.button("Add Task"):
     if task:
@@ -79,7 +78,7 @@ if not st.session_state.data.empty:
             task_key = f"completed-{row['Task']}"
             task_status = st.checkbox(f"{row['Task']}", value=True, key=task_key)
             if not task_status:
-                update_task_status(row['Task'], "Pending")
+                update_task_status(row['Task'], "Pending",st.session_state.data)
 
     if st.button("Delete Completed Tasks"):
         delete_completed_tasks()
