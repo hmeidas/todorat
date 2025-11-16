@@ -82,6 +82,7 @@ if not st.session_state.data.empty:
         filtered_data = st.session_state.data[st.session_state.data[filter_col] == filter_val]
     else:
         filtered_data = st.session_state.data
+    # Color mapping
     categories = filtered_data['Category'].unique().tolist()
     color_map = get_category_colors(categories)
     pending_tasks = filtered_data[filtered_data['Status'] == 'Pending']
@@ -92,18 +93,18 @@ if not st.session_state.data.empty:
         for index, row in pending_tasks.iterrows():
             task_key = f"pending-{row['Task']}-{index}"
             label_html = f"{row['Task']} {get_color_tag(row['Category'], color_map)}"
-            # Display without additional 'Done' label
-            st.checkbox(label_html, value=False, key=task_key)
-            if st.session_state.get(task_key, False):
+            st.markdown(label_html, unsafe_allow_html=True)
+            task_status = st.checkbox(value=False, key=task_key)
+            if task_status:
                 update_task_status(row['Task'], "Completed")
     with col2:
         st.subheader(f"Completed Tasks ({len(completed_tasks)})")
         for index, row in completed_tasks.iterrows():
             task_key = f"completed-{row['Task']}-{index}"
             label_html = f"{row['Task']} {get_color_tag(row['Category'], color_map)}"
-            # Display without additional 'Undo' label
-            st.checkbox(label_html, value=True, key=task_key)
-            if not st.session_state.get(task_key, True):
+            st.markdown(label_html, unsafe_allow_html=True)
+            task_status = st.checkbox( value=True, key=task_key)
+            if not task_status:
                 update_task_status(row['Task'], "Pending")
     if st.button("Delete Completed Tasks"):
         delete_completed_tasks()
