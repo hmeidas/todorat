@@ -94,7 +94,7 @@ if not st.session_state.data.empty:
             task_key = f"pending-{row['Task']}-{index}"
             label_html = f"{row['Task']} {get_color_tag(row['Category'], color_map)}"
             st.markdown(label_html, unsafe_allow_html=True)
-            task_status = st.checkbox(value=False, key=task_key)
+            task_status = st.checkbox("",value=False, key=task_key)
             if task_status:
                 update_task_status(row['Task'], "Completed")
     with col2:
@@ -103,7 +103,7 @@ if not st.session_state.data.empty:
             task_key = f"completed-{row['Task']}-{index}"
             label_html = f"{row['Task']} {get_color_tag(row['Category'], color_map)}"
             st.markdown(label_html, unsafe_allow_html=True)
-            task_status = st.checkbox( value=True, key=task_key)
+            task_status = st.checkbox("", value=True, key=task_key)
             if not task_status:
                 update_task_status(row['Task'], "Pending")
     if st.button("Delete Completed Tasks"):
