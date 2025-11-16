@@ -92,18 +92,24 @@ if not st.session_state.data.empty:
         st.subheader(f"Pending Tasks ({len(pending_tasks)})")
         for index, row in pending_tasks.iterrows():
             task_key = f"pending-{row['Task']}-{index}"
-            label_html = f"{row['Task']} {get_color_tag(row['Category'], color_map)}"
-            st.markdown(label_html, unsafe_allow_html=True)
-            task_status = st.checkbox("",value=False, key=task_key)
+            cols = st.columns([0.08,0.92])
+            with cols[0]:
+                task_status = st.checkbox("",value=False, key=task_key)
+            with cols[1]:
+                label_html = f"{row['Task']} {get_color_tag(row['Category'], color_map)}"
+                st.markdown(label_html, unsafe_allow_html=True)
             if task_status:
                 update_task_status(row['Task'], "Completed")
     with col2:
         st.subheader(f"Completed Tasks ({len(completed_tasks)})")
         for index, row in completed_tasks.iterrows():
             task_key = f"completed-{row['Task']}-{index}"
-            label_html = f"{row['Task']} {get_color_tag(row['Category'], color_map)}"
-            st.markdown(label_html, unsafe_allow_html=True)
-            task_status = st.checkbox("", value=True, key=task_key)
+            cols = st.columns([0.08,0.92])
+            with cols[0]:
+                task_status = st.checkbox("", value=True, key=task_key)
+            with cols[1]:
+                label_html = f"{row['Task']} {get_color_tag(row['Category'], color_map)}"
+                st.markdown(label_html, unsafe_allow_html=True)
             if not task_status:
                 update_task_status(row['Task'], "Pending")
     if st.button("Delete Completed Tasks"):
