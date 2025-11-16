@@ -5,8 +5,8 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="ToDo", page_icon=":clipboard:")
 st.title("ToDo Rat :clipboard:")
 
-# Create a connection object.
-conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet="Tasks")
+# Create a connection object. Removed the spreadsheet parameter as recommended
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Load data from Google Sheets.
 def load_data():
